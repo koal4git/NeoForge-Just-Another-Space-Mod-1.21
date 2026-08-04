@@ -1,0 +1,25 @@
+{
+  "has_precipitation": false,
+  "temperature": 0.2,
+  "downfall": 0.0,
+  "effects": {
+    "sky_color": 2236962,
+    "fog_color": 4473924,
+    "water_color": 4159204,
+    "water_fog_color": 329011
+  },
+  "carvers": {},
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [
+      "justanotherspace:moon_crater_small",
+      "justanotherspace:moon_crater_large"
+    ]
+  ],
+  "creature_spawn_probability": 0.0,
+  "spawners": {},
+  "spawn_costs": {}
+}
