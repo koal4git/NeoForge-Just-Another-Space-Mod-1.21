@@ -11,11 +11,11 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "justanotherspace:control_panel"
+          "name": "justanotherspace:launch_pad"
         }
       ],
       "rolls": 1.0
     }
   ],
-  "random_sequence": "justanotherspace:blocks/control_panel"
+  "random_sequence": "justanotherspace:blocks/launch_pad"
 }

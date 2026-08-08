@@ -7,6 +7,7 @@ import net.koala.jasm.fluid.ModFluids;
 import net.koala.jasm.item.ModCreativeModeTabs;
 import net.koala.jasm.item.ModItems;
 import net.koala.jasm.util.ModSetup;
+import net.koala.jasm.util.ModTags;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -40,10 +41,14 @@ public class JasMod {
 
         ModFluidTypes.register(modEventBus);
         ModFluids.register(modEventBus);
+
         ModCreativeModeTabs.register(modEventBus);
         ModItems.register(modEventBus);
+
         ModBlocks.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+
+
 
 
 

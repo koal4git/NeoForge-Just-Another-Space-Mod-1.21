@@ -2,11 +2,13 @@ package net.koala.jasm.datagen;
 
 
 import net.koala.jasm.JasMod;
+import net.koala.jasm.block.ModBlocks;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.*;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.common.conditions.IConditionBuilder;
 
 import java.util.List;
@@ -39,6 +41,14 @@ public class ModRecipeProvider extends RecipeProvider implements IConditionBuild
                 .requires(ModItems.CRUSHED_AMETHYST, 2)
                 .unlockedBy("has_crushed_amethyst", has(ModItems.CRUSHED_AMETHYST)).save(recipeOutput);
         */
+
+        ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.LAUNCH_PAD.get())
+                .pattern("YBY")
+                .pattern("BYB")
+                .pattern("YBY")
+                .define('Y', Blocks.YELLOW_CONCRETE)
+                .define('B', Blocks.BLACK_CONCRETE)
+                .unlockedBy("has_steel_ingot", has(Blocks.BLACK_CONCRETE)).save(recipeOutput);
 
     }
 

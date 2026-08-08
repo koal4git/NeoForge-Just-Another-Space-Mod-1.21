@@ -13,15 +13,16 @@ public class Config {
 
     public static final ModConfigSpec.IntValue MAX_ROCKET_BLOCKS = BUILDER
             .comment("max amount of block you can use toi build a rocket")
-            .defineInRange("maxRocketBlocks", -1, 0, Integer.MAX_VALUE);
+            .defineInRange("maxRocketBlocks", -1, -1, Integer.MAX_VALUE);
 
     public static final ModConfigSpec.IntValue MAX_ROCKET_WIDTH = BUILDER
             .comment("max amount of block you can use toi build a rocket")
-            .defineInRange("maxRocketWidth", -1, 0, Integer.MAX_VALUE);
+            .defineInRange("maxRocketWidth", -1, -1, Integer.MAX_VALUE);
 
     public static final ModConfigSpec.IntValue MAX_ROCKET_HEIGHT = BUILDER
             .comment("max height of rocket")
-            .defineInRange("maxRocketHeight", -1, 0, Integer.MAX_VALUE);
+            .defineInRange("maxRocketHeight", -1, -1, Integer.MAX_VALUE);
+
 
     static final ModConfigSpec SPEC = BUILDER.build();
 

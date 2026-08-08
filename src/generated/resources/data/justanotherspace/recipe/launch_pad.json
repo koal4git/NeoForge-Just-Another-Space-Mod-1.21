@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "minecraft:black_concrete"
+    },
+    "Y": {
+      "item": "minecraft:yellow_concrete"
+    }
+  },
+  "pattern": [
+    "YBY",
+    "BYB",
+    "YBY"
+  ],
+  "result": {
+    "count": 1,
+    "id": "justanotherspace:launch_pad"
+  }
+}

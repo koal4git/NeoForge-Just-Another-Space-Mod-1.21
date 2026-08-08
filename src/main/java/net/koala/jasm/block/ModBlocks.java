@@ -29,6 +29,10 @@ public class ModBlocks {
     public static final DeferredBlock<Block> PERIDOT_ORE = registerBlock("peridot_ore",
             () -> new Block(BlockBehaviour.Properties.of().strength(1.5f).requiresCorrectToolForDrops().sound(SoundType.STONE)));
 
+    public static final DeferredBlock<Block> LAUNCH_PAD = registerBlock("launch_pad",
+            () -> new Block(BlockBehaviour.Properties.of().strength(1.5f).sound(SoundType.AMETHYST_CLUSTER)));
+
+
     public static final DeferredHolder<Block, LiquidBlock> OIL_BLOCK = BLOCKS.register("oil_fluid",
             () -> new LiquidBlock(ModFluids.OIL_SOURCE.get(), BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)

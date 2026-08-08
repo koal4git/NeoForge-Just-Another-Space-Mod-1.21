@@ -25,6 +25,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
         blockWithItem(ModBlocks.CONTROL_PANEL);
         blockWithItem(ModBlocks.BASIC_ENGINE);
         blockWithItem(ModBlocks.FUEL_TANK);
+        blockWithItem(ModBlocks.LAUNCH_PAD);
 
     }
 
