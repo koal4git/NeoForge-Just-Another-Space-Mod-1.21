@@ -37,6 +37,8 @@ public class JasMod {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
 
+
+
         NeoForge.EVENT_BUS.register(this);
 
         ModFluidTypes.register(modEventBus);
@@ -49,11 +51,6 @@ public class JasMod {
         ModBlockEntities.register(modEventBus);
 
 
-
-
-
-
-
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
 
@@ -62,7 +59,7 @@ public class JasMod {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-
+        event.enqueueWork(ModSetup::init);
     }
 
     // Add the example block item to the building blocks tab
@@ -84,7 +81,7 @@ public class JasMod {
         @SubscribeEvent
         static void onClientSetup(FMLClientSetupEvent event) {
             // Some client setup code
-            event.enqueueWork(ModSetup::new);
+
 
         }
     }
