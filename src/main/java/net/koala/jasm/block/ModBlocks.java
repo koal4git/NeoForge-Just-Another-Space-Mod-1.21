@@ -1,6 +1,9 @@
 package net.koala.jasm.block;
 
 import net.koala.jasm.JasMod;
+import net.koala.jasm.block.custom.BasicEngineBlock;
+import net.koala.jasm.block.custom.ControlPanelBlock;
+import net.koala.jasm.block.custom.FuelTankBlock;
 import net.koala.jasm.fluid.ModFluids;
 import net.koala.jasm.item.ModItems;
 import net.minecraft.world.item.BlockItem;
@@ -36,6 +39,31 @@ public class ModBlocks {
                     .liquid()
                     .sound(SoundType.EMPTY)
                     .pushReaction(PushReaction.IGNORE)));
+
+
+    public static final DeferredBlock<ControlPanelBlock> CONTROL_PANEL = BLOCKS.registerBlock("control_panel",
+            ControlPanelBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.5f)
+                    .requiresCorrectToolForDrops());
+
+
+    public static final DeferredBlock<FuelTankBlock> FUEL_TANK = BLOCKS.registerBlock("fuel_tank",
+            FuelTankBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_GRAY)
+                    .strength(2.5f)
+                    .requiresCorrectToolForDrops());
+
+    public static final DeferredBlock<BasicEngineBlock> BASIC_ENGINE = BLOCKS.registerBlock(
+            "basic_engine",
+            BasicEngineBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GRAY)
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops());
+
 
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);
