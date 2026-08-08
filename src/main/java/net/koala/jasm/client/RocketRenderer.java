@@ -37,7 +37,6 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
             poseStack.pushPose();
 
             poseStack.translate(block.relPos().getX(), block.relPos().getY(), block.relPos().getZ());
-
             dispatcher.renderSingleBlock(block.state(), poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY);
 
             poseStack.popPose();
