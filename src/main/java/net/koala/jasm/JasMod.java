@@ -2,12 +2,15 @@ package net.koala.jasm;
 
 import net.koala.jasm.block.ModBlocks;
 import net.koala.jasm.block.entity.ModBlockEntities;
+import net.koala.jasm.client.RocketRenderer;
+import net.koala.jasm.entity.ModEntities;
 import net.koala.jasm.fluid.ModFluidTypes;
 import net.koala.jasm.fluid.ModFluids;
 import net.koala.jasm.item.ModCreativeModeTabs;
 import net.koala.jasm.item.ModItems;
 import net.koala.jasm.util.ModSetup;
 import net.koala.jasm.util.ModTags;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -50,6 +53,9 @@ public class JasMod {
         ModBlocks.register(modEventBus);
         ModBlockEntities.register(modEventBus);
 
+        ModEntities.register(modEventBus);
+
+
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
@@ -74,6 +80,8 @@ public class JasMod {
 
     }
 
+
+
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
     @EventBusSubscriber(modid = JasMod.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     static class ClientModEvents {
@@ -82,7 +90,11 @@ public class JasMod {
         static void onClientSetup(FMLClientSetupEvent event) {
             // Some client setup code
 
+        }
 
+        @SubscribeEvent
+        static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+            event.registerEntityRenderer(ModEntities.ROCKET.get(), RocketRenderer::new);
         }
     }
 }
