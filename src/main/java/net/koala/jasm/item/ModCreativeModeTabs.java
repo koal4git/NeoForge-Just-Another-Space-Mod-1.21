@@ -42,6 +42,7 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.MOON_BLOCK);
                         output.accept(ModBlocks.PERIDOT_ORE);
 
+                        output.accept(ModBlocks.CONTROL_PANEL);
                         output.accept(ModBlocks.BASIC_ENGINE);
                         output.accept(ModBlocks.FUEL_TANK);
 

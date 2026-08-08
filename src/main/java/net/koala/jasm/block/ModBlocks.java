@@ -41,28 +41,23 @@ public class ModBlocks {
                     .pushReaction(PushReaction.IGNORE)));
 
 
-    public static final DeferredBlock<ControlPanelBlock> CONTROL_PANEL = BLOCKS.registerBlock("control_panel",
-            ControlPanelBlock::new,
-            BlockBehaviour.Properties.of()
+    public static final DeferredBlock<ControlPanelBlock> CONTROL_PANEL = registerBlock("control_panel",
+            () -> new ControlPanelBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL)
                     .strength(2.5f)
-                    .requiresCorrectToolForDrops());
+                    .requiresCorrectToolForDrops()));
 
-
-    public static final DeferredBlock<FuelTankBlock> FUEL_TANK = BLOCKS.registerBlock("fuel_tank",
-            FuelTankBlock::new,
-            BlockBehaviour.Properties.of()
+    public static final DeferredBlock<FuelTankBlock> FUEL_TANK = registerBlock("fuel_tank",
+            () -> new FuelTankBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_LIGHT_GRAY)
                     .strength(2.5f)
-                    .requiresCorrectToolForDrops());
+                    .requiresCorrectToolForDrops()));
 
-    public static final DeferredBlock<BasicEngineBlock> BASIC_ENGINE = BLOCKS.registerBlock(
-            "basic_engine",
-            BasicEngineBlock::new,
-            BlockBehaviour.Properties.of()
+    public static final DeferredBlock<BasicEngineBlock> BASIC_ENGINE = registerBlock("basic_engine",
+            () -> new BasicEngineBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_GRAY)
                     .strength(3.0f)
-                    .requiresCorrectToolForDrops());
+                    .requiresCorrectToolForDrops()));
 
 
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
