@@ -70,11 +70,19 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
                     level.removeBlock(worldPos, false);
                 }
 
+                // 2. Calculate the exact center of the scanned structure
+                BlockPos min = blueprint.getMinBounds();
+                BlockPos max = blueprint.getMaxBounds();
+
+                double spawnX = pos.getX() + ((min.getX() + max.getX()) / 2.0f) + 0.5f;
+
+                double spawnY = pos.getY() + min.getY();
+                double spawnZ = pos.getZ() + ((min.getZ() + max.getZ()) / 2.0f) + 0.5f;
+
                 RocketEntity rocket = new RocketEntity(ModEntities.ROCKET.get(), level);
-                rocket.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+                rocket.setPos(spawnX, spawnY, spawnZ);
                 rocket.setBlueprint(blueprint);
                 level.addFreshEntity(rocket);
-
 
                 player.sendSystemMessage(Component.literal(
                         "Blocks: " + struct.getBlockCount() +

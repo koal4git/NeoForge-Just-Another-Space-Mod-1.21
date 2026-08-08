@@ -104,7 +104,13 @@ public class RocketEntity extends Entity {
 
     @Override
     public EntityDimensions getDimensions(Pose pose) {
-        return EntityDimensions.scalable(renderWidth, renderHeight);
+        // Use the fields you already calculated in applyDimensionsFromBlueprint!
+        return EntityDimensions.scalable(this.renderWidth, this.renderHeight);
+    }
+
+    // Ensure the bounding box updates properly when size changes:
+    public void updateDimensions() {
+        this.refreshDimensions(); // Recalculates AABB based on current pos and getDimensions()
     }
 
 
