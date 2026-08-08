@@ -6,6 +6,10 @@
   "block.justanotherspace.moon_block": "Moon Block",
   "block.justanotherspace.peridot_ore": "Peridot Ore",
 
+  "block.justanotherspace.fuel_tank": "Fuel Tank",
+  "block.justanotherspace.control_panel": "Control Panel",
+  "block.justanotherspace.basic_engine": "Basic Engine",
+
 
   "item.justanotherspace.peridot": "Peridot",
   "item.justanotherspace.oil_bucket": "Peridot"

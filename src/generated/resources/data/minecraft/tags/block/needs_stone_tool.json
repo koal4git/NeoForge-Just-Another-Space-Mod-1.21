@@ -1,3 +1,7 @@
 {
-  "values": []
+  "values": [
+    "justanotherspace:fuel_tank",
+    "justanotherspace:control_panel",
+    "justanotherspace:basic_engine"
+  ]
 }

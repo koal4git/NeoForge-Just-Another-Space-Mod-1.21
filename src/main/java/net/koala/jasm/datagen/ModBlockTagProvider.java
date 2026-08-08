@@ -5,6 +5,7 @@ import net.koala.jasm.block.ModBlocks;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.common.data.BlockTagsProvider;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import org.jetbrains.annotations.Nullable;
@@ -22,6 +23,11 @@ public class ModBlockTagProvider extends BlockTagsProvider {
                 .add(ModBlocks.MOON_BLOCK.get())
                 .add(ModBlocks.PERIDOT_ORE.get());
 
+
+        tag(BlockTags.NEEDS_STONE_TOOL)
+                .add(ModBlocks.FUEL_TANK.get())
+                .add(ModBlocks.CONTROL_PANEL.get())
+                .add(ModBlocks.BASIC_ENGINE.get());
         tag(BlockTags.NEEDS_IRON_TOOL)
                 .add(ModBlocks.MOON_BLOCK.get());
 

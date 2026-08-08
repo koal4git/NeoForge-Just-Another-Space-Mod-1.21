@@ -22,6 +22,10 @@ public class ModBlockStateProvider extends BlockStateProvider {
         blockWithItem(ModBlocks.MOON_BLOCK);
         blockWithItem(ModBlocks.PERIDOT_ORE);
 
+        blockWithItem(ModBlocks.CONTROL_PANEL);
+        blockWithItem(ModBlocks.BASIC_ENGINE);
+        blockWithItem(ModBlocks.FUEL_TANK);
+
     }
 
     private void blockWithItem(DeferredBlock<?> deferredBlock) {

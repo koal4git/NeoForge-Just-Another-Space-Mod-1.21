@@ -32,6 +32,9 @@ public class ModBlockLootTableProvider extends BlockLootSubProvider {
 
         //dropSelf(ModBlocks.CRUSHED_EMERALD_BLOCK.get());
         dropSelf(ModBlocks.MOON_BLOCK.get());
+        dropSelf(ModBlocks.BASIC_ENGINE.get());
+        dropSelf(ModBlocks.FUEL_TANK.get());
+        dropSelf(ModBlocks.CONTROL_PANEL.get());
         add(ModBlocks.PERIDOT_ORE.get(), createMultipleOreDrops(ModBlocks.PERIDOT_ORE.get(), ModItems.PERIDOT.get(), 1, 3));
 
 

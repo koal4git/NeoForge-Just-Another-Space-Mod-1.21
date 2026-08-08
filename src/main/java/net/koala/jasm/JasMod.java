@@ -1,10 +1,12 @@
 package net.koala.jasm;
 
 import net.koala.jasm.block.ModBlocks;
+import net.koala.jasm.block.entity.ModBlockEntities;
 import net.koala.jasm.fluid.ModFluidTypes;
 import net.koala.jasm.fluid.ModFluids;
 import net.koala.jasm.item.ModCreativeModeTabs;
 import net.koala.jasm.item.ModItems;
+import net.koala.jasm.util.ModSetup;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -41,6 +43,7 @@ public class JasMod {
         ModCreativeModeTabs.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
+        ModBlockEntities.register(modEventBus);
 
 
 
@@ -76,6 +79,7 @@ public class JasMod {
         @SubscribeEvent
         static void onClientSetup(FMLClientSetupEvent event) {
             // Some client setup code
+            event.enqueueWork(ModSetup::new);
 
         }
     }
