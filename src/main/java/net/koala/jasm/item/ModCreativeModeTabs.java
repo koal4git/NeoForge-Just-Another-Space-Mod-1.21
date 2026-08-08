@@ -45,6 +45,7 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.CONTROL_PANEL);
                         output.accept(ModBlocks.BASIC_ENGINE);
                         output.accept(ModBlocks.FUEL_TANK);
+                        output.accept(ModBlocks.LAUNCH_PAD);
 
 
                     }).build());
