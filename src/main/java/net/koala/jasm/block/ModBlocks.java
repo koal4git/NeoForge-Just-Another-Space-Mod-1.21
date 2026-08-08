@@ -2,6 +2,7 @@ package net.koala.jasm.block;
 
 import net.koala.jasm.JasMod;
 import net.koala.jasm.block.custom.BasicEngineBlock;
+import net.koala.jasm.block.custom.ChairBlock;
 import net.koala.jasm.block.custom.ControlPanelBlock;
 import net.koala.jasm.block.custom.FuelTankBlock;
 import net.koala.jasm.fluid.ModFluids;
@@ -19,6 +20,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.function.Supplier;
 
+
 public class ModBlocks {
 
     public static DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(JasMod.MOD_ID);
@@ -31,6 +33,9 @@ public class ModBlocks {
 
     public static final DeferredBlock<Block> LAUNCH_PAD = registerBlock("launch_pad",
             () -> new Block(BlockBehaviour.Properties.of().strength(1.5f).sound(SoundType.AMETHYST_CLUSTER)));
+
+    public static final DeferredBlock<Block> CHAIR_BLOCK = registerBlock("chair_block",
+        () -> new ChairBlock(BlockBehaviour.Properties.of().strength(1.0f).sound(SoundType.WOOL)));
 
 
     public static final DeferredHolder<Block, LiquidBlock> OIL_BLOCK = BLOCKS.register("oil_fluid",

@@ -24,9 +24,11 @@ public class ModBlockTagProvider extends BlockTagsProvider {
                 .add(ModBlocks.MOON_BLOCK.get())
                 .add(ModBlocks.PERIDOT_ORE.get());
 
+        tag(BlockTags.MINEABLE_WITH_AXE)
+                .add(ModBlocks.CHAIR_BLOCK.get());
+
         tag(ModTags.Blocks.LAUNCH_PAD)
                 .add(ModBlocks.LAUNCH_PAD.get());
-
 
         tag(BlockTags.NEEDS_STONE_TOOL)
                 .add(ModBlocks.FUEL_TANK.get())
@@ -40,9 +42,6 @@ public class ModBlockTagProvider extends BlockTagsProvider {
         tag(BlockTags.NEEDS_DIAMOND_TOOL)
                 .add(ModBlocks.PERIDOT_ORE.get());
 
-        //tag(BlockTags.FENCES).add(ModBlocks.STEEL_FENCE.get());
-        //tag(BlockTags.FENCE_GATES).add(ModBlocks.STEEL_FENCE_GATE.get());
-        //tag(BlockTags.WALLS).add(ModBlocks.STEEL_WALL.get());
 
     }
 }

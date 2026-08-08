@@ -22,7 +22,7 @@ public class ModCreativeModeTabs {
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, JasMod.MOD_ID);
 
 
-    public static final Supplier<CreativeModeTab> KCURIOS_ITEMS_TAB = CREATIVE_MODE_TAB.register("jasm_items_tab",
+    public static final Supplier<CreativeModeTab> JASM_ITEM_TAB = CREATIVE_MODE_TAB.register("jasm_items_tab",
             () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModBlocks.MOON_BLOCK.get()))
                     .title(Component.translatable("creativetab.justanotherspace.jasm_items"))
                     .displayItems((itemDisplayParameters, output) -> {
@@ -33,7 +33,7 @@ public class ModCreativeModeTabs {
                     }).build());
 
 
-    public static final Supplier<CreativeModeTab> KCURIOS_BLOCKS_TAB = CREATIVE_MODE_TAB.register("jasm_blocks_tab",
+    public static final Supplier<CreativeModeTab> JASM_BLOCKS_TAB = CREATIVE_MODE_TAB.register("jasm_blocks_tab",
             () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModBlocks.MOON_BLOCK.get()))
                     .withTabsBefore(ResourceLocation.fromNamespaceAndPath(JasMod.MOD_ID, "jasm_items_tab"))
                     .title(Component.translatable("creativetab.justanotherspace.jasm_blocks"))
@@ -46,6 +46,7 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.BASIC_ENGINE);
                         output.accept(ModBlocks.FUEL_TANK);
                         output.accept(ModBlocks.LAUNCH_PAD);
+                        output.accept(ModBlocks.CHAIR_BLOCK);
 
 
                     }).build());

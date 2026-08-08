@@ -134,6 +134,7 @@ public class RocketEntity extends Entity {
                     );
 
             applyDimensionsFromBlueprint();
+            this.entityData.set(DATA_BLUEPRINT, blueprintTag); // marks as dirty
         }
     }
 

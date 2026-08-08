@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "W": {
+      "item": "minecraft:pink_wool"
+    }
+  },
+  "pattern": [
+    "WWW",
+    "SWS",
+    "S S"
+  ],
+  "result": {
+    "count": 2,
+    "id": "justanotherspace:chair_block"
+  }
+}
