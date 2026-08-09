@@ -15,11 +15,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -67,20 +69,22 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
 
                 RocketStructure struct = success.structure();
 
-                //find chairs and capture riders before removing chairs
+                // find chairs and capture riders + real world seat centers before removing chairs
                 List<Player> pendingRiders = new ArrayList<>();
-                List<BlockPos> pendingSeatOffsets = new ArrayList<>();
+                List<Vec3> pendingSeatWorldCenters = new ArrayList<>();
 
                 for (RelativeBlock block : struct.getBlocks()) {
                     if (block.state().getBlock() instanceof ChairBlock) {
                         BlockPos worldPos = pos.offset(block.relPos());
+                        Vec3 seatWorldCenter = new Vec3(worldPos.getX() + 0.5, worldPos.getY(), worldPos.getZ() + 0.5);
+
                         List<ChairEntity> chairs = level.getEntitiesOfClass(ChairEntity.class, new AABB(worldPos));
 
                         for (ChairEntity chair : chairs) {
                             for (Entity rider : List.copyOf(chair.getPassengers())) {
                                 if (rider instanceof Player ridingPlayer) {
                                     pendingRiders.add(ridingPlayer);
-                                    pendingSeatOffsets.add(block.relPos());
+                                    pendingSeatWorldCenters.add(seatWorldCenter);
                                 }
                             }
                             chair.discard();
@@ -90,9 +94,14 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
 
                 RocketBlueprint blueprint = RocketBlueprint.fromStructure(struct);
 
+                List<BlockPos> removedPositions = new ArrayList<>();
                 for (RelativeBlock block : struct.getBlocks()) {
                     BlockPos worldPos = pos.offset(block.relPos());
-                    level.removeBlock(worldPos, false);
+                    level.setBlock(worldPos, Blocks.AIR.defaultBlockState(), 2);
+                    removedPositions.add(worldPos);
+                }
+                for (BlockPos worldPos : removedPositions) {
+                    level.updateNeighborsAt(worldPos, Blocks.AIR);
                 }
 
                 BlockPos min = blueprint.getMinBounds();
@@ -105,17 +114,19 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
                 RocketEntity rocket = new RocketEntity(ModEntities.ROCKET.get(), level);
                 rocket.setPos(spawnX, spawnY, spawnZ);
 
-                //reconstruct blocks in right place
+                // remember how far spawn drifted from the control panel, for disassemble() later
                 BlockPos originOffset = rocket.blockPosition().subtract(pos);
                 rocket.setOriginOffset(originOffset);
 
                 rocket.setBlueprint(blueprint);
                 level.addFreshEntity(rocket);
 
-                //remount riders
+                // remount riders at their real seat offset relative to the rocket's actual spawn point
+                Vec3 rocketSpawnPos = new Vec3(spawnX, spawnY, spawnZ);
                 for (int i = 0; i < pendingRiders.size(); i++) {
                     Player ridingPlayer = pendingRiders.get(i);
-                    BlockPos seatOffset = pendingSeatOffsets.get(i);
+                    Vec3 seatOffset = pendingSeatWorldCenters.get(i).subtract(rocketSpawnPos);
+
                     rocket.assignSeat(ridingPlayer.getUUID(), seatOffset);
                     ridingPlayer.startRiding(rocket, true);
                 }

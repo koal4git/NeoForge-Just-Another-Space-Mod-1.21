@@ -28,6 +28,9 @@ public class ChairEntity extends Entity {
 
     @Override
     protected void removePassenger(Entity passenger) {
-        this.kill();
+        super.removePassenger(passenger);
+        if (this.getPassengers().isEmpty()) {
+            this.kill();
+        }
     }
 }

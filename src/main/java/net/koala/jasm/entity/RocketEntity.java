@@ -5,20 +5,17 @@ import net.koala.jasm.structure.RocketBlueprint;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +24,7 @@ import java.util.UUID;
 
 public class RocketEntity extends Entity {
 
-    private final Map<UUID, BlockPos> seatAssignments = new HashMap<>();
+    private final Map<UUID, Vec3> seatAssignments = new HashMap<>();
     private boolean canExit = false;
     private boolean hasPassengers = false;
 
@@ -38,6 +35,9 @@ public class RocketEntity extends Entity {
 
     private static final EntityDataAccessor<Boolean> DATA_CAN_EXIT =
             SynchedEntityData.defineId(RocketEntity.class, EntityDataSerializers.BOOLEAN);
+
+    private static final EntityDataAccessor<CompoundTag> DATA_SEATS =
+            SynchedEntityData.defineId(RocketEntity.class, EntityDataSerializers.COMPOUND_TAG);
 
     private RocketBlueprint blueprint = new RocketBlueprint(List.of(), BlockPos.ZERO, BlockPos.ZERO);
 
@@ -52,10 +52,27 @@ public class RocketEntity extends Entity {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_BLUEPRINT, new CompoundTag());
         builder.define(DATA_CAN_EXIT, false);
+        builder.define(DATA_SEATS, new CompoundTag());
     }
 
-    public void assignSeat(UUID playerId, BlockPos relPos) {
-        seatAssignments.put(playerId, relPos);
+    public void assignSeat(UUID playerId, Vec3 offset) {
+        seatAssignments.put(playerId, offset);
+        syncSeats();
+    }
+
+    private void syncSeats() {
+        if (this.level().isClientSide()) {
+            return;
+        }
+        CompoundTag root = new CompoundTag();
+        for (Map.Entry<UUID, Vec3> entry : seatAssignments.entrySet()) {
+            CompoundTag seat = new CompoundTag();
+            seat.putDouble("x", entry.getValue().x);
+            seat.putDouble("y", entry.getValue().y);
+            seat.putDouble("z", entry.getValue().z);
+            root.put(entry.getKey().toString(), seat);
+        }
+        this.entityData.set(DATA_SEATS, root);
     }
 
     public void setOriginOffset(BlockPos offset) {
@@ -76,22 +93,11 @@ public class RocketEntity extends Entity {
 
     @Override
     protected void positionRider(Entity passenger, MoveFunction callback) {
-        BlockPos rawOffset = seatAssignments.getOrDefault(passenger.getUUID(), BlockPos.ZERO);
-        BlockPos seatOffset = rawOffset.subtract(originOffset);
-        double x = this.getX() + seatOffset.getX() + 0.5;
-        double y = this.getY() + seatOffset.getY();
-        double z = this.getZ() + seatOffset.getZ() + 0.5;
+        Vec3 seatOffset = seatAssignments.getOrDefault(passenger.getUUID(), Vec3.ZERO);
+        double x = this.getX() + seatOffset.x;
+        double y = this.getY() + seatOffset.y;
+        double z = this.getZ() + seatOffset.z;
         callback.accept(passenger, x, y, z);
-    }
-
-    @Override
-    public InteractionResult interact(Player player, InteractionHand hand) {
-        if (player.isShiftKeyDown() && !this.level().isClientSide()) {
-            this.setCanExit(!this.canExit);
-            player.sendSystemMessage(Component.literal("Rocket canExit = " + this.canExit));
-            return InteractionResult.SUCCESS;
-        }
-        return super.interact(player, hand);
     }
 
     public void setBlueprint(RocketBlueprint blueprint) {
@@ -127,6 +133,16 @@ public class RocketEntity extends Entity {
 
         if (key.equals(DATA_CAN_EXIT)) {
             this.canExit = this.entityData.get(DATA_CAN_EXIT);
+        }
+
+        if (key.equals(DATA_SEATS)) {
+            CompoundTag root = this.entityData.get(DATA_SEATS);
+            seatAssignments.clear();
+            for (String uuidKey : root.getAllKeys()) {
+                CompoundTag seat = root.getCompound(uuidKey);
+                Vec3 offset = new Vec3(seat.getDouble("x"), seat.getDouble("y"), seat.getDouble("z"));
+                seatAssignments.put(UUID.fromString(uuidKey), offset);
+            }
         }
     }
 
@@ -171,6 +187,12 @@ public class RocketEntity extends Entity {
     public void tick() {
         super.tick();
 
+        boolean isMoving = this.getDeltaMovement().lengthSqr() > 1.0E-4;
+        boolean shouldAllowExit = !isMoving;
+        if (shouldAllowExit != this.canExit) {
+            setCanExit(shouldAllowExit);
+        }
+
         if (!this.level().isClientSide() && canExit && hasPassengers && getPassengers().isEmpty()) {
             disassemble();
         }
@@ -184,7 +206,7 @@ public class RocketEntity extends Entity {
 
         for (RelativeBlock block : blueprint.getBlocks()) {
             BlockPos worldPos = origin.offset(block.relPos());
-            level.setBlock(worldPos, block.state(), 3);
+            level.setBlock(worldPos, block.state(), 2);
 
             if (block.blockEntityData() != null) {
                 BlockEntity be = level.getBlockEntity(worldPos);
@@ -192,6 +214,11 @@ public class RocketEntity extends Entity {
                     be.loadWithComponents(block.blockEntityData(), this.registryAccess());
                 }
             }
+        }
+
+        for (RelativeBlock block : blueprint.getBlocks()) {
+            BlockPos worldPos = origin.offset(block.relPos());
+            level.updateNeighborsAt(worldPos, block.state().getBlock());
         }
 
         this.discard();
