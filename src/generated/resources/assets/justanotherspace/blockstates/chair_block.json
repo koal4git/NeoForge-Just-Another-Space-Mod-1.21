@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "justanotherspace:block/chair_block",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "justanotherspace:block/chair_block"
+    },
+    "facing=south": {
+      "model": "justanotherspace:block/chair_block",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "justanotherspace:block/chair_block",
+      "y": 270
+    }
+  }
+}

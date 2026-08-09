@@ -55,6 +55,10 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
         if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
+        if (!(player.getVehicle() instanceof ChairEntity)) {
+            player.sendSystemMessage(Component.literal("You must be seated to use the control panel."));
+            return InteractionResult.SUCCESS;
+        }
 
         ScanResult result = RocketScanner.scan((ServerLevel) level, pos);
 
