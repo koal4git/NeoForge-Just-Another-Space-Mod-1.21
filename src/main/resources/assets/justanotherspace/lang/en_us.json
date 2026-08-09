@@ -14,5 +14,9 @@
 
 
   "item.justanotherspace.peridot": "Peridot",
-  "item.justanotherspace.oil_bucket": "Peridot"
+  "item.justanotherspace.oil_bucket": "Peridot",
+
+
+  "key.justanotherspace.ascend": "Ascend Via Thrusters",
+  "key.categories.justanotherspace": "Just Another Space Mod"
 }

@@ -1,10 +1,7 @@
 package net.koala.jasm.block;
 
 import net.koala.jasm.JasMod;
-import net.koala.jasm.block.custom.BasicEngineBlock;
-import net.koala.jasm.block.custom.ChairBlock;
-import net.koala.jasm.block.custom.ControlPanelBlock;
-import net.koala.jasm.block.custom.FuelTankBlock;
+import net.koala.jasm.block.custom.*;
 import net.koala.jasm.fluid.ModFluids;
 import net.koala.jasm.item.ModItems;
 import net.minecraft.world.item.BlockItem;
@@ -37,6 +34,8 @@ public class ModBlocks {
     public static final DeferredBlock<Block> CHAIR_BLOCK = registerBlock("chair_block",
         () -> new ChairBlock(BlockBehaviour.Properties.of().strength(1.0f).sound(SoundType.WOOL)));
 
+    public static final DeferredBlock<Block> METAL_LADDER = registerBlock("metal_ladder",
+            () -> new MetalLadderBlock(BlockBehaviour.Properties.of().strength(1.0f).sound(SoundType.METAL)));
 
     public static final DeferredHolder<Block, LiquidBlock> OIL_BLOCK = BLOCKS.register("oil_fluid",
             () -> new LiquidBlock(ModFluids.OIL_SOURCE.get(), BlockBehaviour.Properties.of()

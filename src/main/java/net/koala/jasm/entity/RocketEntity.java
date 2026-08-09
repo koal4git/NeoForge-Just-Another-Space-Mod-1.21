@@ -9,10 +9,8 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
@@ -27,6 +25,11 @@ public class RocketEntity extends Entity {
     private final Map<UUID, Vec3> seatAssignments = new HashMap<>();
     private boolean canExit = false;
     private boolean hasPassengers = false;
+
+    private static final double ASCEND_ACCELERATION = 0.02;
+    private static final double MAX_ASCEND_SPEED = 0.6;
+    private static final double IDLE_DAMPING = 0.9;
+
 
     private BlockPos originOffset = BlockPos.ZERO;
 
@@ -151,12 +154,41 @@ public class RocketEntity extends Entity {
         return EntityDimensions.scalable(this.renderWidth, this.renderHeight);
     }
 
-    public void updateDimensions() {
-        this.refreshDimensions();
+    public float getCameraRadius() {
+        return Math.max(renderWidth, renderHeight) / 2.0f;
     }
 
     public RocketBlueprint getBlueprint() {
         return blueprint;
+    }
+
+    @Override
+    public LivingEntity getControllingPassenger() {
+        Entity first = this.getFirstPassenger();
+        return first instanceof LivingEntity living ? living : null;
+
+    }
+
+    private boolean ascendInputHeld = false;
+    public void setAscendInputHeld(boolean held) {
+        this.ascendInputHeld = held;
+    }
+
+    private void handleFlightInput() {
+        Vec3 motion = this.getDeltaMovement();
+        double newY;
+
+        if (ascendInputHeld) {
+            newY = Math.min(motion.y + ASCEND_ACCELERATION, MAX_ASCEND_SPEED);
+        } else {
+            newY = motion.y * IDLE_DAMPING;
+            if (Math.abs(newY) < 0.005) {
+                newY = 0.0;
+            }
+        }
+
+        this.setDeltaMovement(motion.x, newY, motion.z);
+        this.move(MoverType.SELF, this.getDeltaMovement());
     }
 
     @Override
@@ -187,6 +219,10 @@ public class RocketEntity extends Entity {
     public void tick() {
         super.tick();
 
+        if (!this.level().isClientSide()) {
+            handleFlightInput();
+        }
+
         boolean isMoving = this.getDeltaMovement().lengthSqr() > 1.0E-4;
         boolean shouldAllowExit = !isMoving;
         if (shouldAllowExit != this.canExit) {
@@ -198,6 +234,9 @@ public class RocketEntity extends Entity {
         }
 
         hasPassengers = !getPassengers().isEmpty();
+        if (getPassengers().isEmpty()) {
+            ascendInputHeld = false;
+        }
     }
 
     private void disassemble() {

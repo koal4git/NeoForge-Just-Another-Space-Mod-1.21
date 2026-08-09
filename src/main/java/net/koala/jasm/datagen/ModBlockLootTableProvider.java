@@ -40,6 +40,8 @@ public class ModBlockLootTableProvider extends BlockLootSubProvider {
         dropSelf(ModBlocks.LAUNCH_PAD.get());
         dropSelf(ModBlocks.CHAIR_BLOCK.get());
 
+        dropSelf(ModBlocks.METAL_LADDER.get());
+
 
     }
     //this is the copper ore drop method but changed

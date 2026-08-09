@@ -22,7 +22,11 @@ public class ModBlockTagProvider extends BlockTagsProvider {
     protected void addTags(HolderLookup.Provider provider) {
         tag(BlockTags.MINEABLE_WITH_PICKAXE)
                 .add(ModBlocks.MOON_BLOCK.get())
-                .add(ModBlocks.PERIDOT_ORE.get());
+                .add(ModBlocks.PERIDOT_ORE.get())
+                .add(ModBlocks.FUEL_TANK.get())
+                .add(ModBlocks.CONTROL_PANEL.get())
+                .add(ModBlocks.BASIC_ENGINE.get())
+                .add(ModBlocks.METAL_LADDER.get());
 
         tag(BlockTags.MINEABLE_WITH_AXE)
                 .add(ModBlocks.CHAIR_BLOCK.get());
@@ -33,7 +37,8 @@ public class ModBlockTagProvider extends BlockTagsProvider {
         tag(BlockTags.NEEDS_STONE_TOOL)
                 .add(ModBlocks.FUEL_TANK.get())
                 .add(ModBlocks.CONTROL_PANEL.get())
-                .add(ModBlocks.BASIC_ENGINE.get());
+                .add(ModBlocks.BASIC_ENGINE.get())
+                .add(ModBlocks.METAL_LADDER.get());
         tag(BlockTags.NEEDS_IRON_TOOL)
                 .add(ModBlocks.MOON_BLOCK.get());
 

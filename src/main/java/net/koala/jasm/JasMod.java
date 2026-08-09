@@ -2,6 +2,7 @@ package net.koala.jasm;
 
 import net.koala.jasm.block.ModBlocks;
 import net.koala.jasm.block.entity.ModBlockEntities;
+import net.koala.jasm.client.ModKeyMappings;
 import net.koala.jasm.entity.RocketEntity;
 import net.koala.jasm.entity.client.ChairRenderer;
 import net.koala.jasm.entity.client.RocketRenderer;
@@ -10,9 +11,19 @@ import net.koala.jasm.fluid.ModFluidTypes;
 import net.koala.jasm.fluid.ModFluids;
 import net.koala.jasm.item.ModCreativeModeTabs;
 import net.koala.jasm.item.ModItems;
+import net.koala.jasm.network.AscendInputPayload;
 import net.koala.jasm.util.ModSetup;
+import net.minecraft.client.Minecraft;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.event.entity.EntityMountEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -61,6 +72,7 @@ public class JasMod {
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
+        modEventBus.addListener(this::onRegisterPayloads);
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -75,12 +87,26 @@ public class JasMod {
 
     }
 
+    private void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToServer(AscendInputPayload.TYPE, AscendInputPayload.STREAM_CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer serverPlayer
+                            && serverPlayer.getVehicle() instanceof RocketEntity rocket) {
+                        rocket.setAscendInputHeld(payload.held());
+                    }
+                })
+        );
+    }
+
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
 
     }
+
+
 
     @SubscribeEvent
     public void onEntityMount(EntityMountEvent event) {
@@ -103,14 +129,50 @@ public class JasMod {
 
         @SubscribeEvent
         static void onClientSetup(FMLClientSetupEvent event) {
-            // Some client setup code
-
         }
 
         @SubscribeEvent
         static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerEntityRenderer(ModEntities.ROCKET.get(), RocketRenderer::new);
             event.registerEntityRenderer(ModEntities.CHAIR_ENTITY.get(), ChairRenderer::new);
+        }
+
+        @SubscribeEvent
+        static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
+            event.register(ModKeyMappings.ASCEND);
+        }
+    }
+
+    @EventBusSubscriber(modid = JasMod.MOD_ID, value = Dist.CLIENT)
+    static class ClientGameEvents {
+
+        private static boolean lastAscendState = false;
+
+        @SubscribeEvent
+        static void onClientTick(ClientTickEvent.Post event) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null) {
+                return;
+            }
+
+            boolean riding = mc.player.getVehicle() instanceof RocketEntity;
+            boolean holding = riding && ModKeyMappings.ASCEND.isDown();
+
+            if (holding != lastAscendState) {
+                lastAscendState = holding;
+                PacketDistributor.sendToServer(new AscendInputPayload(holding));
+            }
+        }
+
+        @SubscribeEvent
+        static void onCalculateCameraDistance(CalculateDetachedCameraDistanceEvent event) {
+            Entity cameraEntity = event.getCamera().getEntity();
+
+            if (cameraEntity.getVehicle() instanceof RocketEntity rocket) {
+                float baseDistance = event.getDistance();
+                float extraForSize = rocket.getCameraRadius() * 1.5f;
+                event.setDistance(baseDistance + extraForSize);
+            }
         }
     }
 }

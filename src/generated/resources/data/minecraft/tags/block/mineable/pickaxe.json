@@ -1,6 +1,10 @@
 {
   "values": [
     "justanotherspace:moon_block",
-    "justanotherspace:peridot_ore"
+    "justanotherspace:peridot_ore",
+    "justanotherspace:fuel_tank",
+    "justanotherspace:control_panel",
+    "justanotherspace:basic_engine",
+    "justanotherspace:metal_ladder"
   ]
 }

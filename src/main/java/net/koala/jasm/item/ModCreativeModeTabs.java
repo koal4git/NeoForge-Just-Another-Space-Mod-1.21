@@ -47,6 +47,7 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.FUEL_TANK);
                         output.accept(ModBlocks.LAUNCH_PAD);
                         output.accept(ModBlocks.CHAIR_BLOCK);
+                        output.accept(ModBlocks.METAL_LADDER);
 
 
                     }).build());
