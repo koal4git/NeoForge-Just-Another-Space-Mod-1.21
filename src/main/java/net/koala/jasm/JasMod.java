@@ -2,6 +2,7 @@ package net.koala.jasm;
 
 import net.koala.jasm.block.ModBlocks;
 import net.koala.jasm.block.entity.ModBlockEntities;
+import net.koala.jasm.entity.RocketEntity;
 import net.koala.jasm.entity.client.ChairRenderer;
 import net.koala.jasm.entity.client.RocketRenderer;
 import net.koala.jasm.entity.ModEntities;
@@ -11,6 +12,7 @@ import net.koala.jasm.item.ModCreativeModeTabs;
 import net.koala.jasm.item.ModItems;
 import net.koala.jasm.util.ModSetup;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.event.entity.EntityMountEvent;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -78,6 +80,19 @@ public class JasMod {
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
 
+    }
+
+    @SubscribeEvent
+    public void onEntityMount(EntityMountEvent event) {
+        if (!(event.getEntityBeingMounted() instanceof RocketEntity rocket)) {
+            return;
+        }
+        if (event.isMounting()) {
+            return; // only gate dismounts, mounting is always fine
+        }
+        if (!rocket.canExit()) {
+            event.setCanceled(true);
+        }
     }
 
 

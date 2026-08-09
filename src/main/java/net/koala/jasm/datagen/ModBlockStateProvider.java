@@ -27,6 +27,11 @@ public class ModBlockStateProvider extends BlockStateProvider {
         blockWithItem(ModBlocks.FUEL_TANK);
         blockWithItem(ModBlocks.LAUNCH_PAD);
 
+        //chair
+        ModelFile chairModel = models().getExistingFile(modLoc("block/chair_block"));
+        horizontalBlock(ModBlocks.CHAIR_BLOCK.get(), chairModel);
+        simpleBlockItem(ModBlocks.CHAIR_BLOCK.get(), chairModel);
+
     }
 
     private void blockWithItem(DeferredBlock<?> deferredBlock) {
