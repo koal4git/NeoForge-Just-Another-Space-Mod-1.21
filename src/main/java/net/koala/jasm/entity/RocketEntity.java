@@ -172,24 +172,38 @@ public class RocketEntity extends Entity {
         this.ascendInputHeld = held;
     }
 
+    @Override
+    public boolean isControlledByLocalInstance() {
+        return false;
+    }
+
+    private double verticalSpeed = 0.0;
+
+    private static final double DESCEND_ACCELERATION = 0.02;
+    private static final double MAX_DESCEND_SPEED = -0.6;
+
+
+    //THIS CANNOT BE DELETED THIUS MAKES THE PHYSICS WORK
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        Vec3 seatOffset = seatAssignments.getOrDefault(passenger.getUUID(), Vec3.ZERO);
+        return new Vec3(this.getX() + seatOffset.x, this.getY() + seatOffset.y, this.getZ() + seatOffset.z);
+    }
+
     private void handleFlightInput() {
-        Vec3 motion = this.getDeltaMovement();
-        System.out.println("Flight before: ascendHeld=" + ascendInputHeld + " motionY(before)=" + motion.y + " passengers=" + this.getPassengers().size());
-        double newY;
         if (ascendInputHeld) {
-            if (this.onGround()) {
-                this.setPos(this.getX(), this.getY() + 0.05, this.getZ());
-            }
-            newY = Math.min(motion.y + ASCEND_ACCELERATION, MAX_ASCEND_SPEED);
+            verticalSpeed = Math.min(verticalSpeed + ASCEND_ACCELERATION, MAX_ASCEND_SPEED);
         } else {
-            newY = motion.y * IDLE_DAMPING;
-            if (Math.abs(newY) < 0.005) newY = 0.0;
+            verticalSpeed = Math.max(verticalSpeed - DESCEND_ACCELERATION, MAX_DESCEND_SPEED);
         }
-        this.setDeltaMovement(motion.x, newY, motion.z);
-        this.hasImpulse = true;
-        this.move(MoverType.SELF, this.getDeltaMovement());
-        Vec3 after = this.getDeltaMovement();
-        System.out.println("Flight after: motionY(after)=" + after.y + " onGround=" + this.onGround() + " verticalCollision=" + this.verticalCollision);
+
+        Vec3 movement = new Vec3(0, verticalSpeed, 0);
+        this.move(MoverType.SELF, movement);
+        this.setDeltaMovement(movement);
+
+        if (this.verticalCollision) {
+            verticalSpeed = 0.0;
+        }
     }
 
     @Override
@@ -221,7 +235,7 @@ public class RocketEntity extends Entity {
         if (!this.level().isClientSide()) {
             handleFlightInput();
         }
-        boolean isMoving = this.getDeltaMovement().lengthSqr() > 1.0E-4;
+        boolean isMoving = Math.abs(verticalSpeed) > 0.01;
         boolean shouldAllowExit = !isMoving;
         if (shouldAllowExit != this.canExit) {
             setCanExit(shouldAllowExit);
