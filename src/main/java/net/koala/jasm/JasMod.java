@@ -91,6 +91,8 @@ public class JasMod {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(AscendInputPayload.TYPE, AscendInputPayload.STREAM_CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
+                    System.out.println("[JASM DEBUG] payload received, held=" + payload.held()
+                            + " vehicle=" + (context.player() != null ? context.player().getVehicle() : "no player"));
                     if (context.player() instanceof ServerPlayer serverPlayer
                             && serverPlayer.getVehicle() instanceof RocketEntity rocket) {
                         rocket.setAscendInputHeld(payload.held());

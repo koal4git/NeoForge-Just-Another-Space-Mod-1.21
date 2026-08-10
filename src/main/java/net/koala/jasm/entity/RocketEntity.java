@@ -49,7 +49,10 @@ public class RocketEntity extends Entity {
 
     public RocketEntity(EntityType<?> type, Level level) {
         super(type, level);
+
+        this.setNoGravity(true);
     }
+
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
@@ -176,12 +179,17 @@ public class RocketEntity extends Entity {
 
     private void handleFlightInput() {
         Vec3 motion = this.getDeltaMovement();
+
+        System.out.println("AscendHeld=" + ascendInputHeld + " motionY(before)=" + motion.y + " passengers="
+                + this.getPassengers().size());
+
         double newY;
 
         if (ascendInputHeld) {
             newY = Math.min(motion.y + ASCEND_ACCELERATION, MAX_ASCEND_SPEED);
         } else {
             newY = motion.y * IDLE_DAMPING;
+
             if (Math.abs(newY) < 0.005) {
                 newY = 0.0;
             }
@@ -228,14 +236,17 @@ public class RocketEntity extends Entity {
         if (shouldAllowExit != this.canExit) {
             setCanExit(shouldAllowExit);
         }
+        hasPassengers = !getPassengers().isEmpty();
+
 
         if (!this.level().isClientSide() && canExit && hasPassengers && getPassengers().isEmpty()) {
             disassemble();
         }
 
-        hasPassengers = !getPassengers().isEmpty();
+
         if (getPassengers().isEmpty()) {
             ascendInputHeld = false;
+
         }
     }
 

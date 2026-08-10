@@ -97,6 +97,7 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
                 List<BlockPos> removedPositions = new ArrayList<>();
                 for (RelativeBlock block : struct.getBlocks()) {
                     BlockPos worldPos = pos.offset(block.relPos());
+                    level.removeBlockEntity(worldPos);
                     level.setBlock(worldPos, Blocks.AIR.defaultBlockState(), 2);
                     removedPositions.add(worldPos);
                 }
