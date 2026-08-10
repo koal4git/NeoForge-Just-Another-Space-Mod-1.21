@@ -1,0 +1,12 @@
+{
+  "type": "justanotherspace:earth_to_moon",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:the_void",
+      "lakes": false,
+      "features": false,
+      "layers": []
+    }
+  }
+}

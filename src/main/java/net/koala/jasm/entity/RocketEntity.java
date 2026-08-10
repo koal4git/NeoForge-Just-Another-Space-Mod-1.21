@@ -1,22 +1,26 @@
 package net.koala.jasm.entity;
 
+import net.koala.jasm.JasMod;
 import net.koala.jasm.structure.RelativeBlock;
 import net.koala.jasm.structure.RocketBlueprint;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.*;
 
 public class RocketEntity extends Entity {
 
@@ -45,6 +49,9 @@ public class RocketEntity extends Entity {
 
     private boolean ascendInputHeld = false;
     private boolean hadPassengersPrev = false;
+
+    private static final double TRANSIT_ALTITUDE = 350.0;
+    private boolean inTransit = false;
 
     public RocketEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -247,6 +254,94 @@ public class RocketEntity extends Entity {
         this.hadPassengersPrev = hasPassengersNow;
         if (getControllingPassenger() == null) {
             ascendInputHeld = false;
+        }
+
+        if (!this.level().isClientSide() && !inTransit && this.getY() >= TRANSIT_ALTITUDE) {
+            enterTransitDimension();
+        }
+
+
+    }
+
+    private void enterTransitDimension() {
+        ServerLevel currentLevel = (ServerLevel) this.level();
+
+        ResourceKey<Level> transitKey = ResourceKey.create(
+                Registries.DIMENSION,
+                ResourceLocation.fromNamespaceAndPath(JasMod.MOD_ID, "earth_to_moon")
+        );
+
+        ServerLevel transitLevel = currentLevel.getServer().getLevel(transitKey);
+
+        if (transitLevel == null) {
+            return;
+        }
+
+        inTransit = true;
+
+        List<Entity> passengers = new ArrayList<>(this.getPassengers());
+
+        for (Entity passenger : passengers) {
+            passenger.stopRiding();
+        }
+
+        double spawnX = 0.5;
+        double spawnY = 100.0;
+        double spawnZ = 0.5;
+
+        Vec3 rocketVelocity = this.getDeltaMovement();
+
+        DimensionTransition transition = new DimensionTransition(
+                transitLevel,
+                new Vec3(spawnX, spawnY, spawnZ),
+                rocketVelocity,
+                this.getYRot(),
+                this.getXRot(),
+                DimensionTransition.DO_NOTHING
+        );
+
+        Entity movedEntity = this.changeDimension(transition);
+
+        if (!(movedEntity instanceof RocketEntity newRocket)) {
+            inTransit = false;
+            return;
+        }
+
+        newRocket.setPos(spawnX, spawnY, spawnZ);
+        newRocket.setDeltaMovement(rocketVelocity);
+        newRocket.setYRot(this.getYRot());
+        newRocket.setXRot(this.getXRot());
+        newRocket.inTransit = true;
+
+        for (Entity passenger : passengers) {
+            if (passenger instanceof ServerPlayer serverPlayer) {
+                serverPlayer.teleportTo(
+                        transitLevel,
+                        spawnX,
+                        spawnY,
+                        spawnZ,
+                        Set.of(),
+                        serverPlayer.getYRot(),
+                        serverPlayer.getXRot()
+                );
+
+                passenger.startRiding(newRocket, true);
+            } else {
+                DimensionTransition passengerTransition = new DimensionTransition(
+                        transitLevel,
+                        new Vec3(spawnX, spawnY, spawnZ),
+                        passenger.getDeltaMovement(),
+                        passenger.getYRot(),
+                        passenger.getXRot(),
+                        DimensionTransition.DO_NOTHING
+                );
+
+                Entity movedPassenger = passenger.changeDimension(passengerTransition);
+
+                if (movedPassenger != null) {
+                    movedPassenger.startRiding(newRocket, true);
+                }
+            }
         }
     }
 

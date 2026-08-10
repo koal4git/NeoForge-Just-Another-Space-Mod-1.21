@@ -62,7 +62,8 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
             return InteractionResult.SUCCESS;
         }
 
-        ScanResult result = RocketScanner.scan((ServerLevel) level, pos);
+        boolean requirePlatform = level.dimension() == Level.OVERWORLD;
+        ScanResult result = RocketScanner.scan((ServerLevel) level, pos, requirePlatform);
 
         switch (result) {
             case ScanResult.Success success -> {

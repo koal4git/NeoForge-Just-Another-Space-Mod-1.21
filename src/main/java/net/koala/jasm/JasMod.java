@@ -3,6 +3,8 @@ package net.koala.jasm;
 import net.koala.jasm.block.ModBlocks;
 import net.koala.jasm.block.entity.ModBlockEntities;
 import net.koala.jasm.client.ModKeyMappings;
+import net.koala.jasm.client.SpaceDimensionEffects;
+import net.koala.jasm.client.SpaceSkyRenderer;
 import net.koala.jasm.entity.RocketEntity;
 import net.koala.jasm.entity.client.ChairRenderer;
 import net.koala.jasm.entity.client.RocketRenderer;
@@ -14,12 +16,10 @@ import net.koala.jasm.item.ModItems;
 import net.koala.jasm.network.AscendInputPayload;
 import net.koala.jasm.util.ModSetup;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.event.entity.EntityMountEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -40,6 +40,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+
+import static net.koala.jasm.client.SpaceSkyRenderEvent.MOON_DIMENSION;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(JasMod.MOD_ID)
@@ -129,6 +131,8 @@ public class JasMod {
     @EventBusSubscriber(modid = JasMod.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     static class ClientModEvents {
 
+        private static RegisterDimensionSpecialEffectsEvent event;
+
         @SubscribeEvent
         static void onClientSetup(FMLClientSetupEvent event) {
         }
@@ -142,6 +146,18 @@ public class JasMod {
         @SubscribeEvent
         static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
             event.register(ModKeyMappings.ASCEND);
+        }
+
+        @SubscribeEvent
+        static void onRegisterDimensionEffects(RegisterDimensionSpecialEffectsEvent event) {
+            ClientModEvents.event = event;
+            event.register(
+                    ResourceLocation.fromNamespaceAndPath(
+                            JasMod.MOD_ID,
+                            "space"
+                    ),
+                    new SpaceDimensionEffects()
+            );
         }
     }
 
@@ -175,6 +191,28 @@ public class JasMod {
                 float extraForSize = rocket.getCameraRadius() * 1.5f;
                 event.setDistance(baseDistance + extraForSize);
             }
+        }
+
+        @SubscribeEvent
+        static void onRenderLevel(RenderLevelStageEvent event) {
+
+            if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) {
+                return;
+            }
+
+            Minecraft mc = Minecraft.getInstance();
+
+            if (mc.level == null) {
+                return;
+            }
+
+            if (!mc.level.dimension().equals(MOON_DIMENSION)) {
+                return;
+            }
+
+            SpaceSkyRenderer.render(
+                    event.getPoseStack()
+            );
         }
     }
 }

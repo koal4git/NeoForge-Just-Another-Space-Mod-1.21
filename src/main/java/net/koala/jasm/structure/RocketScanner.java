@@ -20,7 +20,7 @@ public final class RocketScanner {
 
     private RocketScanner() {}
 
-    public static ScanResult scan(ServerLevel level, BlockPos startPos) {
+    public static ScanResult scan(ServerLevel level, BlockPos startPos,  boolean requirePlatform) {
 
         Set<BlockPos> platformTouchPositions = new HashSet<>();
         Set<BlockPos> visited = new HashSet<>();
@@ -44,7 +44,6 @@ public final class RocketScanner {
             visited.add(pos);
 
             if (level.isEmptyBlock(pos)) continue; // skip air
-
 
 
             // relpos = pos-starpos and shi
@@ -76,7 +75,6 @@ public final class RocketScanner {
 
 
             //early exit checks (must be in loop not after)
-
             if (blocks.size() > SAFETY_HARD_CAP) {
                 return new ScanResult.Failure(ScanResult.Reason.TOO_MANY_BLOCKS, "safety limit ");
             }
@@ -96,9 +94,6 @@ public final class RocketScanner {
                 return new ScanResult.Failure(ScanResult.Reason.TOO_TALL, "Tall " + maxHeightConfig);
             }
 
-
-
-
             //queue 6 neighbors up
             for (Direction dir : Direction.values()) {
                 BlockPos neighbor = pos.relative(dir);
@@ -117,6 +112,10 @@ public final class RocketScanner {
         BlockPos maxBounds = new BlockPos(maxX, maxY, maxZ);
 
         RocketStructure struct = new RocketStructure(blocks, components, startPos, minBounds, maxBounds);
+
+        if (requirePlatform && platformTouchPositions.isEmpty()) {
+            return new ScanResult.Failure(ScanResult.Reason.NOT_ON_PLATFORM, "");
+        }
 
         if (platformTouchPositions.isEmpty()) {
             return new ScanResult.Failure(ScanResult.Reason.NOT_ON_PLATFORM, "");
