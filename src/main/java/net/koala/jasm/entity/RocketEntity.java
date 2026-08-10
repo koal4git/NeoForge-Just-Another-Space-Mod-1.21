@@ -2,7 +2,6 @@ package net.koala.jasm.entity;
 
 import net.koala.jasm.structure.RelativeBlock;
 import net.koala.jasm.structure.RocketBlueprint;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -14,7 +13,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,12 +22,10 @@ public class RocketEntity extends Entity {
 
     private final Map<UUID, Vec3> seatAssignments = new HashMap<>();
     private boolean canExit = false;
-    private boolean hasPassengers = false;
 
     private static final double ASCEND_ACCELERATION = 0.02;
     private static final double MAX_ASCEND_SPEED = 0.6;
     private static final double IDLE_DAMPING = 0.9;
-
 
     private BlockPos originOffset = BlockPos.ZERO;
 
@@ -47,12 +43,13 @@ public class RocketEntity extends Entity {
     private float renderWidth = 1.0f;
     private float renderHeight = 1.0f;
 
+    private boolean ascendInputHeld = false;
+    private boolean hadPassengersPrev = false;
+
     public RocketEntity(EntityType<?> type, Level level) {
         super(type, level);
-
         this.setNoGravity(true);
     }
-
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
@@ -67,9 +64,7 @@ public class RocketEntity extends Entity {
     }
 
     private void syncSeats() {
-        if (this.level().isClientSide()) {
-            return;
-        }
+        if (this.level().isClientSide()) return;
         CompoundTag root = new CompoundTag();
         for (Map.Entry<UUID, Vec3> entry : seatAssignments.entrySet()) {
             CompoundTag seat = new CompoundTag();
@@ -91,7 +86,6 @@ public class RocketEntity extends Entity {
 
     public void setCanExit(boolean value) {
         this.canExit = value;
-
         if (!this.level().isClientSide()) {
             this.entityData.set(DATA_CAN_EXIT, value);
         }
@@ -109,7 +103,6 @@ public class RocketEntity extends Entity {
     public void setBlueprint(RocketBlueprint blueprint) {
         this.blueprint = blueprint;
         applyDimensionsFromBlueprint();
-
         if (!this.level().isClientSide()) {
             this.entityData.set(DATA_BLUEPRINT, blueprint.toNbt(this.registryAccess()));
         }
@@ -119,7 +112,6 @@ public class RocketEntity extends Entity {
         int widthX = blueprint.getMaxBounds().getX() - blueprint.getMinBounds().getX() + 1;
         int widthZ = blueprint.getMaxBounds().getZ() - blueprint.getMinBounds().getZ() + 1;
         int height = blueprint.getMaxBounds().getY() - blueprint.getMinBounds().getY() + 1;
-
         this.renderWidth = Math.max(1, Math.max(widthX, widthZ));
         this.renderHeight = Math.max(1, height);
         this.refreshDimensions();
@@ -128,7 +120,6 @@ public class RocketEntity extends Entity {
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
         super.onSyncedDataUpdated(key);
-
         if (key.equals(DATA_BLUEPRINT)) {
             CompoundTag tag = this.entityData.get(DATA_BLUEPRINT);
             if (!tag.isEmpty()) {
@@ -136,11 +127,9 @@ public class RocketEntity extends Entity {
                 applyDimensionsFromBlueprint();
             }
         }
-
         if (key.equals(DATA_CAN_EXIT)) {
             this.canExit = this.entityData.get(DATA_CAN_EXIT);
         }
-
         if (key.equals(DATA_SEATS)) {
             CompoundTag root = this.entityData.get(DATA_SEATS);
             seatAssignments.clear();
@@ -169,34 +158,38 @@ public class RocketEntity extends Entity {
     public LivingEntity getControllingPassenger() {
         Entity first = this.getFirstPassenger();
         return first instanceof LivingEntity living ? living : null;
-
     }
 
-    private boolean ascendInputHeld = false;
+    public void onClientInput(UUID playerId, boolean held) {
+        LivingEntity controller = getControllingPassenger();
+        if (controller != null && controller.getUUID().equals(playerId)) {
+            this.ascendInputHeld = held;
+            System.out.println("[JASM DEBUG] payload received, held=" + held + " vehicle=" + this);
+        }
+    }
+
     public void setAscendInputHeld(boolean held) {
         this.ascendInputHeld = held;
     }
 
     private void handleFlightInput() {
         Vec3 motion = this.getDeltaMovement();
-
-        System.out.println("AscendHeld=" + ascendInputHeld + " motionY(before)=" + motion.y + " passengers="
-                + this.getPassengers().size());
-
+        System.out.println("Flight before: ascendHeld=" + ascendInputHeld + " motionY(before)=" + motion.y + " passengers=" + this.getPassengers().size());
         double newY;
-
         if (ascendInputHeld) {
+            if (this.onGround()) {
+                this.setPos(this.getX(), this.getY() + 0.05, this.getZ());
+            }
             newY = Math.min(motion.y + ASCEND_ACCELERATION, MAX_ASCEND_SPEED);
         } else {
             newY = motion.y * IDLE_DAMPING;
-
-            if (Math.abs(newY) < 0.005) {
-                newY = 0.0;
-            }
+            if (Math.abs(newY) < 0.005) newY = 0.0;
         }
-
         this.setDeltaMovement(motion.x, newY, motion.z);
+        this.hasImpulse = true;
         this.move(MoverType.SELF, this.getDeltaMovement());
+        Vec3 after = this.getDeltaMovement();
+        System.out.println("Flight after: motionY(after)=" + after.y + " onGround=" + this.onGround() + " verticalCollision=" + this.verticalCollision);
     }
 
     @Override
@@ -207,16 +200,15 @@ public class RocketEntity extends Entity {
             applyDimensionsFromBlueprint();
             this.entityData.set(DATA_BLUEPRINT, blueprintTag);
         }
-
         this.originOffset = new BlockPos(tag.getInt("OriginOffsetX"), tag.getInt("OriginOffsetY"), tag.getInt("OriginOffsetZ"));
         this.canExit = tag.getBoolean("CanExit");
         this.entityData.set(DATA_CAN_EXIT, this.canExit);
+        this.setNoGravity(true);
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.put("Blueprint", blueprint.toNbt(this.registryAccess()));
-
         tag.putInt("OriginOffsetX", originOffset.getX());
         tag.putInt("OriginOffsetY", originOffset.getY());
         tag.putInt("OriginOffsetZ", originOffset.getZ());
@@ -226,38 +218,31 @@ public class RocketEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-
         if (!this.level().isClientSide()) {
             handleFlightInput();
         }
-
         boolean isMoving = this.getDeltaMovement().lengthSqr() > 1.0E-4;
         boolean shouldAllowExit = !isMoving;
         if (shouldAllowExit != this.canExit) {
             setCanExit(shouldAllowExit);
         }
-        hasPassengers = !getPassengers().isEmpty();
-
-
-        if (!this.level().isClientSide() && canExit && hasPassengers && getPassengers().isEmpty()) {
+        boolean hasPassengersNow = !getPassengers().isEmpty();
+        if (!this.level().isClientSide() && hadPassengersPrev && !hasPassengersNow && this.canExit) {
             disassemble();
         }
-
-
-        if (getPassengers().isEmpty()) {
+        this.hadPassengersPrev = hasPassengersNow;
+        if (getControllingPassenger() == null) {
             ascendInputHeld = false;
-
         }
     }
 
     private void disassemble() {
+        if (!(this.level() instanceof ServerLevel)) return;
         ServerLevel level = (ServerLevel) this.level();
         BlockPos origin = this.blockPosition().subtract(originOffset);
-
         for (RelativeBlock block : blueprint.getBlocks()) {
             BlockPos worldPos = origin.offset(block.relPos());
             level.setBlock(worldPos, block.state(), 2);
-
             if (block.blockEntityData() != null) {
                 BlockEntity be = level.getBlockEntity(worldPos);
                 if (be != null) {
@@ -265,12 +250,10 @@ public class RocketEntity extends Entity {
                 }
             }
         }
-
         for (RelativeBlock block : blueprint.getBlocks()) {
             BlockPos worldPos = origin.offset(block.relPos());
             level.updateNeighborsAt(worldPos, block.state().getBlock());
         }
-
         this.discard();
     }
 }
