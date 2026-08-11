@@ -3,6 +3,7 @@ package net.koala.jasm.entity;
 import net.koala.jasm.JasMod;
 import net.koala.jasm.structure.RelativeBlock;
 import net.koala.jasm.structure.RocketBlueprint;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -24,12 +25,24 @@ import java.util.*;
 
 public class RocketEntity extends Entity {
 
+
+    private double launchX;
+    private double launchY;
+    private double launchZ;
+    private boolean hasSavedLaunch = false;
+
+
     private final Map<UUID, Vec3> seatAssignments = new HashMap<>();
     private boolean canExit = false;
+    private String destinationDim = "";
 
     private static final double ASCEND_ACCELERATION = 0.02;
     private static final double MAX_ASCEND_SPEED = 0.6;
-    private static final double IDLE_DAMPING = 0.9;
+    private double verticalSpeed = 0.0;
+
+    private static double DESCEND_ACCELERATION = 0.02;
+    private static final double MAX_DESCEND_SPEED = -0.6;
+
 
     private BlockPos originOffset = BlockPos.ZERO;
 
@@ -184,10 +197,6 @@ public class RocketEntity extends Entity {
         return false;
     }
 
-    private double verticalSpeed = 0.0;
-
-    private static final double DESCEND_ACCELERATION = 0.02;
-    private static final double MAX_DESCEND_SPEED = -0.6;
 
 
     //THIS CANNOT BE DELETED THIUS MAKES THE PHYSICS WORK
@@ -225,6 +234,25 @@ public class RocketEntity extends Entity {
         this.canExit = tag.getBoolean("CanExit");
         this.entityData.set(DATA_CAN_EXIT, this.canExit);
         this.setNoGravity(true);
+        this.ticks = tag.getDouble("FlightTicks");
+        this.destinationDim = tag.getString("DestinationDim");
+        this.launchX = tag.getDouble("LaunchX");
+        this.launchY = tag.getDouble("LaunchY");
+        this.launchZ = tag.getDouble("LaunchZ");
+        this.hasSavedLaunch = tag.getBoolean("HasSavedLaunch");
+
+        if (tag.contains("SeatAssignments")) {
+            CompoundTag seatsTag = tag.getCompound("SeatAssignments");
+            this.seatAssignments.clear();
+            for (String uuidKey : seatsTag.getAllKeys()) {
+                CompoundTag seat = seatsTag.getCompound(uuidKey);
+                Vec3 offset = new Vec3(seat.getDouble("x"), seat.getDouble("y"), seat.getDouble("z"));
+                this.seatAssignments.put(UUID.fromString(uuidKey), offset);
+            }
+            syncSeats();
+        }
+
+
     }
 
     @Override
@@ -234,7 +262,26 @@ public class RocketEntity extends Entity {
         tag.putInt("OriginOffsetY", originOffset.getY());
         tag.putInt("OriginOffsetZ", originOffset.getZ());
         tag.putBoolean("CanExit", canExit);
+        tag.putDouble("FlightTicks", this.ticks);
+        tag.putString("DestinationDim", this.destinationDim);
+        tag.putDouble("LaunchX", this.launchX);
+        tag.putDouble("LaunchY", this.launchY);
+        tag.putDouble("LaunchZ", this.launchZ);
+        tag.putBoolean("HasSavedLaunch", this.hasSavedLaunch);
+
+        CompoundTag seatsTag = new CompoundTag();
+        for (Map.Entry<UUID, Vec3> entry : seatAssignments.entrySet()) {
+            CompoundTag seat = new CompoundTag();
+            seat.putDouble("x", entry.getValue().x);
+            seat.putDouble("y", entry.getValue().y);
+            seat.putDouble("z", entry.getValue().z);
+            seatsTag.put(entry.getKey().toString(), seat);
+        }
+        tag.put("SeatAssignments", seatsTag);
+
     }
+
+    public double ticks = 0.0;
 
     @Override
     public void tick() {
@@ -242,6 +289,14 @@ public class RocketEntity extends Entity {
         if (!this.level().isClientSide()) {
             handleFlightInput();
         }
+
+        if (!this.level().isClientSide() && !hasSavedLaunch) {
+            this.launchX = this.getX();
+            this.launchY = this.getY();
+            this.launchZ = this.getZ();
+            this.hasSavedLaunch = true;
+        }
+
         boolean isMoving = Math.abs(verticalSpeed) > 0.01;
         boolean shouldAllowExit = !isMoving;
         if (shouldAllowExit != this.canExit) {
@@ -256,20 +311,50 @@ public class RocketEntity extends Entity {
             ascendInputHeld = false;
         }
 
-        if (!this.level().isClientSide() && !inTransit && this.getY() >= TRANSIT_ALTITUDE) {
-            enterTransitDimension();
-        }
-
+        ticks = ticks + 1;
+        changeDimension();
 
     }
 
-    private void enterTransitDimension() {
-        ServerLevel currentLevel = (ServerLevel) this.level();
+    private void changeDimension() {
+        if (this.level().isClientSide()) return;
 
-        ResourceKey<Level> transitKey = ResourceKey.create(
-                Registries.DIMENSION,
-                ResourceLocation.fromNamespaceAndPath(JasMod.MOD_ID, "earth_to_moon")
-        );
+        ResourceKey<Level> overworld = ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath("minecraft", "overworld"));
+        ResourceKey<Level> etm = ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath(JasMod.MOD_ID, "earth_to_moon"));
+        ResourceKey<Level> moon = ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath(JasMod.MOD_ID, "moon"));
+
+        ResourceKey<Level> current = this.level().dimension();
+
+        if (current == overworld && this.getY() >= TRANSIT_ALTITUDE) {
+            this.destinationDim = "moon";
+            this.ticks = 0;
+            enterTransitDimension(etm);
+        }
+
+        else if (current == moon && this.getY() >= TRANSIT_ALTITUDE) {
+            this.destinationDim = "overworld";
+            this.ticks = 0;
+            enterTransitDimension(etm);
+        }
+
+        else if (current == etm) {
+            DESCEND_ACCELERATION = 0.0f;
+
+            if (this.ticks > 140) {
+                DESCEND_ACCELERATION = 0.02f;
+                this.ticks = 0;
+
+                if (this.destinationDim.equals("moon")) {
+                    enterTransitDimension(moon);
+                } else if (this.destinationDim.equals("overworld")) {
+                    enterTransitDimension(overworld);
+                }
+            }
+        }
+    }
+
+    private void enterTransitDimension(ResourceKey<Level> transitKey) {
+        ServerLevel currentLevel = (ServerLevel) this.level();
 
         ServerLevel transitLevel = currentLevel.getServer().getLevel(transitKey);
 
@@ -285,9 +370,24 @@ public class RocketEntity extends Entity {
             passenger.stopRiding();
         }
 
-        double spawnX = 0.5;
-        double spawnY = 100.0;
-        double spawnZ = 0.5;
+        String targetDimName = transitLevel.dimension().location().getPath();
+
+        double spawnX;
+        double spawnZ;
+
+        if (targetDimName.equals("moon")) {
+            spawnX = this.launchX * 5.0;
+            spawnZ = this.launchZ * 5.0;
+        }
+        else if (targetDimName.equals("overworld")) {
+            spawnX = this.launchX / 5;
+            spawnZ = this.launchZ / 5;
+        }
+        else {
+            spawnX = this.getX();
+            spawnZ = this.getZ();
+        }
+        double spawnY = 200.0;
 
         Vec3 rocketVelocity = this.getDeltaMovement();
 
@@ -307,6 +407,19 @@ public class RocketEntity extends Entity {
             return;
         }
 
+        newRocket.seatAssignments.clear();
+        newRocket.seatAssignments.putAll(this.seatAssignments);
+        newRocket.syncSeats();
+
+        newRocket.setPos(spawnX, spawnY, spawnZ);
+        newRocket.setDeltaMovement(rocketVelocity);
+
+        newRocket.launchX = this.launchX;
+        newRocket.launchY = this.launchY;
+        newRocket.launchZ = this.launchZ;
+        newRocket.hasSavedLaunch = this.hasSavedLaunch;
+        newRocket.destinationDim = this.destinationDim;
+        newRocket.ticks = this.ticks;
         newRocket.setPos(spawnX, spawnY, spawnZ);
         newRocket.setDeltaMovement(rocketVelocity);
         newRocket.setYRot(this.getYRot());
