@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "justanotherspace:moon",
+  "features": "justanotherspace:peridot_ore_placed",
+  "step": "underground_ores"
+}

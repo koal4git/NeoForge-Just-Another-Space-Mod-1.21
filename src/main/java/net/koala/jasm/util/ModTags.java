@@ -9,12 +9,17 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 
+import javax.swing.text.html.HTML;
+
 public class ModTags {
 
     public static class Blocks {
 
         public static final TagKey<Block> LAUNCH_PAD = TagKey.create(Registries.BLOCK,
                 ResourceLocation.fromNamespaceAndPath(JasMod.MOD_ID, "launch_pad"));
+
+        public static final TagKey<Block> MOON_NATURALS = TagKey.create(Registries.BLOCK,
+                ResourceLocation.fromNamespaceAndPath(JasMod.MOD_ID, "moon_naturals"));
 
 
         private static TagKey<Block> createTag(String name) {
