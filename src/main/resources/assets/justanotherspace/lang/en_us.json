@@ -11,12 +11,18 @@
   "block.justanotherspace.basic_engine": "Basic Engine",
   "block.justanotherspace.launch_pad": "Launch Pad",
   "block.justanotherspace.chair_block": "Chair Block",
+  "block.justanotherspace.metal_ladder": "Metal Ladder",
 
 
   "item.justanotherspace.peridot": "Peridot",
-  "item.justanotherspace.oil_bucket": "Peridot",
+  "item.justanotherspace.oil_bucket": "Oil Bucket",
 
 
   "key.justanotherspace.ascend": "Ascend Via Thrusters",
-  "key.categories.justanotherspace": "Just Another Space Mod"
+  "key.categories.justanotherspace": "Just Another Space Mod",
+
+
+  "err.justanotherspace.noengine": "No engine attatched to the spacecraft",
+  "err.justanotherspace.notseated": "You must be seated to use the control panel."
+
 }

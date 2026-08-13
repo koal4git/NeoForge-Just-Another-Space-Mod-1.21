@@ -51,14 +51,17 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
         return RenderShape.MODEL;
     }
 
+
+
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+
 
         if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (!(player.getVehicle() instanceof ChairEntity)) {
-            player.sendSystemMessage(Component.literal("You must be seated to use the control panel."));
+            player.sendSystemMessage(Component.translatable("err.justanotherspace.notseated"));
             return InteractionResult.SUCCESS;
         }
 
@@ -68,9 +71,12 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
         switch (result) {
             case ScanResult.Success success -> {
 
+
+
                 RocketStructure struct = success.structure();
 
-                // find chairs and capture riders + real world seat centers before removing chairs
+
+                //find chairs and capture riders & real world seat centers before removing chairs
                 List<Player> pendingRiders = new ArrayList<>();
                 List<Vec3> pendingSeatWorldCenters = new ArrayList<>();
 
@@ -116,14 +122,14 @@ public class ControlPanelBlock extends BaseEntityBlock implements ControlCompone
                 RocketEntity rocket = new RocketEntity(ModEntities.ROCKET.get(), level);
                 rocket.setPos(spawnX, spawnY, spawnZ);
 
-                // remember how far spawn drifted from the control panel, for disassemble() later
+                //remember how far spawn drifted from the control panel, for disassemble() later
                 BlockPos originOffset = rocket.blockPosition().subtract(pos);
                 rocket.setOriginOffset(originOffset);
 
                 rocket.setBlueprint(blueprint);
                 level.addFreshEntity(rocket);
 
-                // remount riders at their real seat offset relative to the rocket's actual spawn point
+                //remount riders at their real seat offset relative to the rocket's actual spawn point
                 Vec3 rocketSpawnPos = new Vec3(spawnX, spawnY, spawnZ);
                 for (int i = 0; i < pendingRiders.size(); i++) {
                     Player ridingPlayer = pendingRiders.get(i);

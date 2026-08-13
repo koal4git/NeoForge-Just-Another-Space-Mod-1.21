@@ -19,7 +19,8 @@ public sealed interface ScanResult {
         TOO_WIDE,
         TOO_TALL,
         NOT_ON_PLATFORM,
-        BELOW_PLATFORM
+        BELOW_PLATFORM,
+        MISSING_COMPONENT
     }
 
 

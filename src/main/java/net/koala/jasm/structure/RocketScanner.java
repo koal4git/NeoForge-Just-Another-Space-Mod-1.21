@@ -1,10 +1,13 @@
 package net.koala.jasm.structure;
 
 import net.koala.jasm.Config;
+import net.koala.jasm.block.custom.BasicEngineBlock;
+import net.koala.jasm.component.EngineComponent;
 import net.koala.jasm.component.ModComponents;
 import net.koala.jasm.util.ModTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -76,7 +79,7 @@ public final class RocketScanner {
 
             //early exit checks (must be in loop not after)
             if (blocks.size() > SAFETY_HARD_CAP) {
-                return new ScanResult.Failure(ScanResult.Reason.TOO_MANY_BLOCKS, "safety limit ");
+                return new ScanResult.Failure(ScanResult.Reason.TOO_MANY_BLOCKS, "safety limit");
             }
             if (maxBlocksConfig >= 0 && blocks.size() > maxBlocksConfig) {
                 return new ScanResult.Failure(ScanResult.Reason.TOO_MANY_BLOCKS, "max " + maxBlocksConfig);
@@ -130,7 +133,25 @@ public final class RocketScanner {
             }
         }
 
+        // Check for engine
+        boolean hasEngine = false;
+
+        for (RelativeComponent component : components) {
+            if (component.component() instanceof EngineComponent) {
+                hasEngine = true;
+                break;
+            }
+        }
+
+        if (!hasEngine) {
+            return new ScanResult.Failure(ScanResult.Reason.MISSING_COMPONENT,"no engine");
+        }
+
         return new ScanResult.Success(struct);
 
     }
+
+
+
+
 }

@@ -3,7 +3,6 @@ package net.koala.jasm.entity;
 import net.koala.jasm.JasMod;
 import net.koala.jasm.structure.RelativeBlock;
 import net.koala.jasm.structure.RocketBlueprint;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -14,8 +13,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.portal.DimensionTransition;
@@ -36,8 +35,8 @@ public class RocketEntity extends Entity {
     private boolean canExit = false;
     private String destinationDim = "";
 
-    private static final double ASCEND_ACCELERATION = 0.02;
-    private static final double MAX_ASCEND_SPEED = 0.6;
+    private static final double ASCEND_ACCELERATION = 0.02; // def 0.02
+    private static final double MAX_ASCEND_SPEED = 0.8;
     private double verticalSpeed = 0.0;
 
     private static double DESCEND_ACCELERATION = 0.02;
@@ -45,6 +44,16 @@ public class RocketEntity extends Entity {
 
 
     private BlockPos originOffset = BlockPos.ZERO;
+    private boolean inTransit = false;
+
+    //interpolation for flying
+
+    private int lerpSteps = 0;
+    private double lerpX;
+    private double lerpY;
+    private double lerpZ;
+    private float lerpYRot;
+    private float lerpXRot;
 
     private static final EntityDataAccessor<CompoundTag> DATA_BLUEPRINT =
             SynchedEntityData.defineId(RocketEntity.class, EntityDataSerializers.COMPOUND_TAG);
@@ -64,7 +73,6 @@ public class RocketEntity extends Entity {
     private boolean hadPassengersPrev = false;
 
     private static final double TRANSIT_ALTITUDE = 350.0;
-    private boolean inTransit = false;
 
     public RocketEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -197,7 +205,35 @@ public class RocketEntity extends Entity {
         return false;
     }
 
+    //smooths flying
+    @Override
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
+        this.lerpX = x;
+        this.lerpY = y;
+        this.lerpZ = z;
+        this.lerpYRot = yRot;
+        this.lerpXRot = xRot;
+        this.lerpSteps = steps;
+    }
 
+
+    private void tickLerp() {
+        if (lerpSteps <= 0) {
+            return;
+        }
+
+        double nextX = this.getX() + (lerpX - this.getX()) / lerpSteps;
+        double nextY = this.getY() + (lerpY - this.getY()) / lerpSteps;
+        double nextZ = this.getZ() + (lerpZ - this.getZ()) / lerpSteps;
+
+        float nextYRot = (float) (this.getYRot() + Mth.wrapDegrees(lerpYRot - this.getYRot()) / lerpSteps);
+        float nextXRot = (float) (this.getXRot() + Mth.wrapDegrees(lerpXRot - this.getXRot()) / lerpSteps);
+
+        lerpSteps--;
+
+        this.setPos(nextX, nextY, nextZ);
+        this.setRot(nextYRot, nextXRot);
+    }
 
     //THIS CANNOT BE DELETED THIUS MAKES THE PHYSICS WORK
     @Override
@@ -286,8 +322,11 @@ public class RocketEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
+
         if (!this.level().isClientSide()) {
             handleFlightInput();
+        } else {
+            tickLerp();
         }
 
         if (!this.level().isClientSide() && !hasSavedLaunch) {
@@ -343,11 +382,14 @@ public class RocketEntity extends Entity {
             if (this.ticks > 140) {
                 DESCEND_ACCELERATION = 0.02f;
                 this.ticks = 0;
+                switch (this.destinationDim) {
+                    case "moon":
+                        enterTransitDimension(moon);
+                        break;
 
-                if (this.destinationDim.equals("moon")) {
-                    enterTransitDimension(moon);
-                } else if (this.destinationDim.equals("overworld")) {
-                    enterTransitDimension(overworld);
+                    case "overworld":
+                        enterTransitDimension(overworld);
+                        break;
                 }
             }
         }
@@ -361,7 +403,6 @@ public class RocketEntity extends Entity {
         if (transitLevel == null) {
             return;
         }
-
         inTransit = true;
 
         List<Entity> passengers = new ArrayList<>(this.getPassengers());
