@@ -1,6 +1,9 @@
 package net.koala.jasm.entity;
 
 import net.koala.jasm.JasMod;
+import net.koala.jasm.block.entity.FuelTankBlockEntity;
+import net.koala.jasm.component.FuelTankComponent;
+import net.koala.jasm.fluid.ModFluids;
 import net.koala.jasm.structure.RelativeBlock;
 import net.koala.jasm.structure.RocketBlueprint;
 import net.minecraft.core.BlockPos;
@@ -19,6 +22,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 
 import java.util.*;
 
@@ -36,18 +41,31 @@ public class RocketEntity extends Entity {
     private String destinationDim = "";
 
     private static final double ASCEND_ACCELERATION = 0.02; // def 0.02
-    private static final double MAX_ASCEND_SPEED = 0.8;
+    private static final double MAX_ASCEND_SPEED = 0.7;
     private double verticalSpeed = 0.0;
 
     private static double DESCEND_ACCELERATION = 0.02;
     private static final double MAX_DESCEND_SPEED = -0.6;
 
+    // --- pooled oil ---
+    // All fuel tank blocks in the assembled rocket feed one shared pool
+    // rather than being tracked individually mid-flight. The pool is
+    // seeded once (from each tank's saved fluid) when the rocket is
+    // assembled, drained a little every tick spent actually thrusting,
+    // and split back out across the tanks again on disassemble().
+    private static final int OIL_PER_ASCEND_TICK = 1; // mB burned per tick while thrusting up
+    private int oilCapacity = 0;
+    private int currentOil = 0;
+
+    private static final EntityDataAccessor<Integer> DATA_OIL =
+            SynchedEntityData.defineId(RocketEntity.class, EntityDataSerializers.INT);
+
+    private static final EntityDataAccessor<Integer> DATA_OIL_CAPACITY =
+            SynchedEntityData.defineId(RocketEntity.class, EntityDataSerializers.INT);
 
     private BlockPos originOffset = BlockPos.ZERO;
-    private boolean inTransit = false;
 
-    //interpolation for flying
-
+    // --- client-side interpolation ---
     private int lerpSteps = 0;
     private double lerpX;
     private double lerpY;
@@ -72,7 +90,8 @@ public class RocketEntity extends Entity {
     private boolean ascendInputHeld = false;
     private boolean hadPassengersPrev = false;
 
-    private static final double TRANSIT_ALTITUDE = 350.0;
+    private static final double TRANSIT_ALTITUDE = 250.0;
+    private boolean inTransit = false;
 
     public RocketEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -84,6 +103,16 @@ public class RocketEntity extends Entity {
         builder.define(DATA_BLUEPRINT, new CompoundTag());
         builder.define(DATA_CAN_EXIT, false);
         builder.define(DATA_SEATS, new CompoundTag());
+        builder.define(DATA_OIL, 0);
+        builder.define(DATA_OIL_CAPACITY, 0);
+    }
+
+    public int getCurrentOil() {
+        return currentOil;
+    }
+
+    public int getOilCapacity() {
+        return oilCapacity;
     }
 
     public void assignSeat(UUID playerId, Vec3 offset) {
@@ -133,6 +162,28 @@ public class RocketEntity extends Entity {
         applyDimensionsFromBlueprint();
         if (!this.level().isClientSide()) {
             this.entityData.set(DATA_BLUEPRINT, blueprint.toNbt(this.registryAccess()));
+            recomputeOilPool();
+        }
+    }
+
+    private void recomputeOilPool() {
+        int capacity = 0;
+        int current = 0;
+        for (RelativeBlock block : blueprint.getBlocks()) {
+            if (block.state().getBlock() instanceof FuelTankComponent tank) {
+                capacity += tank.getCapacity();
+                current += FuelTankBlockEntity.readSavedFuelAmount(block.blockEntityData(), this.registryAccess());
+            }
+        }
+        this.oilCapacity = capacity;
+        this.currentOil = current;
+        syncOil();
+    }
+
+    private void syncOil() {
+        if (!this.level().isClientSide()) {
+            this.entityData.set(DATA_OIL, currentOil);
+            this.entityData.set(DATA_OIL_CAPACITY, oilCapacity);
         }
     }
 
@@ -157,6 +208,12 @@ public class RocketEntity extends Entity {
         }
         if (key.equals(DATA_CAN_EXIT)) {
             this.canExit = this.entityData.get(DATA_CAN_EXIT);
+        }
+        if (key.equals(DATA_OIL)) {
+            this.currentOil = this.entityData.get(DATA_OIL);
+        }
+        if (key.equals(DATA_OIL_CAPACITY)) {
+            this.oilCapacity = this.entityData.get(DATA_OIL_CAPACITY);
         }
         if (key.equals(DATA_SEATS)) {
             CompoundTag root = this.entityData.get(DATA_SEATS);
@@ -205,7 +262,6 @@ public class RocketEntity extends Entity {
         return false;
     }
 
-    //smooths flying
     @Override
     public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
         this.lerpX = x;
@@ -215,7 +271,6 @@ public class RocketEntity extends Entity {
         this.lerpXRot = xRot;
         this.lerpSteps = steps;
     }
-
 
     private void tickLerp() {
         if (lerpSteps <= 0) {
@@ -243,8 +298,9 @@ public class RocketEntity extends Entity {
     }
 
     private void handleFlightInput() {
-        if (ascendInputHeld) {
+        if (ascendInputHeld && currentOil > 0) {
             verticalSpeed = Math.min(verticalSpeed + ASCEND_ACCELERATION, MAX_ASCEND_SPEED);
+            consumeOil(OIL_PER_ASCEND_TICK);
         } else {
             verticalSpeed = Math.max(verticalSpeed - DESCEND_ACCELERATION, MAX_DESCEND_SPEED);
         }
@@ -256,6 +312,14 @@ public class RocketEntity extends Entity {
         if (this.verticalCollision) {
             verticalSpeed = 0.0;
         }
+    }
+
+    private void consumeOil(int amount) {
+        if (amount <= 0 || currentOil <= 0) {
+            return;
+        }
+        currentOil -= Math.min(currentOil, amount);
+        syncOil();
     }
 
     @Override
@@ -276,6 +340,9 @@ public class RocketEntity extends Entity {
         this.launchY = tag.getDouble("LaunchY");
         this.launchZ = tag.getDouble("LaunchZ");
         this.hasSavedLaunch = tag.getBoolean("HasSavedLaunch");
+        this.oilCapacity = tag.getInt("OilCapacity");
+        this.currentOil = tag.getInt("CurrentOil");
+        syncOil();
 
         if (tag.contains("SeatAssignments")) {
             CompoundTag seatsTag = tag.getCompound("SeatAssignments");
@@ -304,6 +371,8 @@ public class RocketEntity extends Entity {
         tag.putDouble("LaunchY", this.launchY);
         tag.putDouble("LaunchZ", this.launchZ);
         tag.putBoolean("HasSavedLaunch", this.hasSavedLaunch);
+        tag.putInt("OilCapacity", this.oilCapacity);
+        tag.putInt("CurrentOil", this.currentOil);
 
         CompoundTag seatsTag = new CompoundTag();
         for (Map.Entry<UUID, Vec3> entry : seatAssignments.entrySet()) {
@@ -403,6 +472,7 @@ public class RocketEntity extends Entity {
         if (transitLevel == null) {
             return;
         }
+
         inTransit = true;
 
         List<Entity> passengers = new ArrayList<>(this.getPassengers());
@@ -461,6 +531,9 @@ public class RocketEntity extends Entity {
         newRocket.hasSavedLaunch = this.hasSavedLaunch;
         newRocket.destinationDim = this.destinationDim;
         newRocket.ticks = this.ticks;
+        newRocket.oilCapacity = this.oilCapacity;
+        newRocket.currentOil = this.currentOil;
+        newRocket.syncOil();
         newRocket.setPos(spawnX, spawnY, spawnZ);
         newRocket.setDeltaMovement(rocketVelocity);
         newRocket.setYRot(this.getYRot());
@@ -503,7 +576,10 @@ public class RocketEntity extends Entity {
         if (!(this.level() instanceof ServerLevel)) return;
         ServerLevel level = (ServerLevel) this.level();
         BlockPos origin = this.blockPosition().subtract(originOffset);
-        for (RelativeBlock block : blueprint.getBlocks()) {
+
+        List<RelativeBlock> blocksToPlace = redistributeOilAcrossTanks();
+
+        for (RelativeBlock block : blocksToPlace) {
             BlockPos worldPos = origin.offset(block.relPos());
             level.setBlock(worldPos, block.state(), 2);
             if (block.blockEntityData() != null) {
@@ -513,10 +589,41 @@ public class RocketEntity extends Entity {
                 }
             }
         }
-        for (RelativeBlock block : blueprint.getBlocks()) {
+        for (RelativeBlock block : blocksToPlace) {
             BlockPos worldPos = origin.offset(block.relPos());
             level.updateNeighborsAt(worldPos, block.state().getBlock());
         }
         this.discard();
+    }
+
+    private List<RelativeBlock> redistributeOilAcrossTanks() {
+        List<RelativeBlock> result = new ArrayList<>(blueprint.getBlocks().size());
+        int remaining = this.currentOil;
+
+        for (RelativeBlock block : blueprint.getBlocks()) {
+            if (!(block.state().getBlock() instanceof FuelTankComponent tank)) {
+                result.add(block);
+                continue;
+            }
+
+            int share = Math.min(remaining, tank.getCapacity());
+            remaining -= share;
+
+            FluidStack stack = share > 0
+                    ? new FluidStack(ModFluids.OIL_SOURCE.get(), share)
+                    : FluidStack.EMPTY;
+
+            FluidTank scratch = new FluidTank(tank.getCapacity());
+            scratch.setFluid(stack);
+
+            CompoundTag beData = block.blockEntityData() != null
+                    ? block.blockEntityData().copy()
+                    : new CompoundTag();
+            beData.put("Fuel", scratch.writeToNBT(this.registryAccess(), new CompoundTag()));
+
+            result.add(new RelativeBlock(block.relPos(), block.state(), beData));
+        }
+
+        return result;
     }
 }

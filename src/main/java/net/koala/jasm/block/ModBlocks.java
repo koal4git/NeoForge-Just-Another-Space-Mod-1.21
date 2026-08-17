@@ -57,6 +57,7 @@ public class ModBlocks {
 
     public static final DeferredBlock<FuelTankBlock> FUEL_TANK = registerBlock("fuel_tank",
             () -> new FuelTankBlock(BlockBehaviour.Properties.of()
+                    .noOcclusion()
                     .mapColor(MapColor.COLOR_LIGHT_GRAY)
                     .strength(2.5f)
                     .requiresCorrectToolForDrops()));

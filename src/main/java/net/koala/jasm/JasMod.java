@@ -2,6 +2,7 @@ package net.koala.jasm;
 
 import net.koala.jasm.block.ModBlocks;
 import net.koala.jasm.block.entity.ModBlockEntities;
+import net.koala.jasm.block.entity.ModBlockEntityCapabilities;
 import net.koala.jasm.client.ModKeyMappings;
 import net.koala.jasm.client.SpaceDimensionEffects;
 import net.koala.jasm.client.SpaceSkyRenderer;
@@ -16,6 +17,8 @@ import net.koala.jasm.item.ModItems;
 import net.koala.jasm.network.AscendInputPayload;
 import net.koala.jasm.util.ModSetup;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -67,6 +70,7 @@ public class JasMod {
 
         ModBlocks.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+        ModBlockEntityCapabilities.registerCapabilities(modEventBus);
 
         ModEntities.register(modEventBus);
 
@@ -135,12 +139,16 @@ public class JasMod {
 
         @SubscribeEvent
         static void onClientSetup(FMLClientSetupEvent event) {
+
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.FUEL_TANK.get(), RenderType.cutout());
+
         }
 
         @SubscribeEvent
         static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerEntityRenderer(ModEntities.ROCKET.get(), RocketRenderer::new);
             event.registerEntityRenderer(ModEntities.CHAIR_ENTITY.get(), ChairRenderer::new);
+
         }
 
         @SubscribeEvent
